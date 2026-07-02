@@ -1,5 +1,7 @@
 # API Onboarding Descriptor (AID)
 
+**Spec home:** [apicommons.org/onboarding](https://apicommons.org/onboarding/) · **Live descriptors:** [apis.io/.well-known/api-onboarding](https://apis.io/.well-known/api-onboarding) · [apievangelist.com/.well-known/api-onboarding](https://apievangelist.com/.well-known/api-onboarding) · **Story:** [What 36 Providers Taught Me About Programmatic API Onboarding](https://apievangelist.com/2026/07/02/what-36-providers-taught-me-about-programmatic-api-onboarding/)
+
 **We standardized the API. We didn't standardize the application.** OpenAPI describes what an API does. OAuth, DCR (RFC 7591), and Client ID Metadata Documents describe the credential handshake. Nothing describes what it takes to *get there* — the account, the plan tier, the terms of service, the verification queue, the provider's private vocabulary for "application," and the console you have to click through before any of the standards apply.
 
 The API Onboarding Descriptor is a machine-readable document, discoverable at `/.well-known/api-onboarding` (and referenced from an [APIs.json](https://apisjson.org) index), that closes that gap. It was derived by induction from working onboarding scripts written against 36 API providers and gateways — not designed in the abstract.

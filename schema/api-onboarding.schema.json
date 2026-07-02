@@ -104,8 +104,8 @@
             "properties": {
               "type": {
                 "type": "string",
-                "description": "browser-oauth: public authorization-code+PKCE flow with a bundled/public client (the SoundCloud pattern). manifest: a declarative app manifest posted through a browser approval and exchanged for credentials (the GitHub App Manifest / Slack manifest pattern). management-api: authenticated REST calls against an admin/management plane. portal-api: a developer-portal-scoped API (portal token/cookie). dcr: RFC 7591 dynamic client registration. cimd: OAuth Client ID Metadata Documents — the client_id is a URL. console-only: a human clicks.",
-                "enum": ["browser-oauth", "manifest", "management-api", "portal-api", "dcr", "cimd", "console-only"]
+                "description": "open: no registration required at all — anonymous, keyless access at a base tier (the door is simply open). browser-oauth: public authorization-code+PKCE flow with a bundled/public client (the SoundCloud pattern). manifest: a declarative app manifest posted through a browser approval and exchanged for credentials (the GitHub App Manifest / Slack manifest pattern). management-api: authenticated REST calls against an admin/management plane. portal-api: a developer-portal-scoped API (portal token/cookie). dcr: RFC 7591 dynamic client registration. cimd: OAuth Client ID Metadata Documents — the client_id is a URL. console-only: a human clicks.",
+                "enum": ["open", "browser-oauth", "manifest", "management-api", "portal-api", "dcr", "cimd", "console-only"]
               },
               "description": { "type": "string" },
               "baseUrl": { "type": "string", "format": "uri" },
