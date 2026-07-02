@@ -344,7 +344,7 @@ async function main() {
     die(`Usage: api-onboard.mjs <descriptor.json|url> [--requirements] [--<arg> <value> ...]`, ref ? 1 : 0);
   }
   const descriptor = await loadDescriptor(ref);
-  if (descriptor.aid !== "0.1") console.error(`Warning: descriptor declares aid ${descriptor.aid}; engine speaks 0.1.`);
+  if (descriptor.aod !== "0.1") console.error(`Warning: descriptor declares aod ${descriptor.aod}; engine speaks 0.1.`);
 
   if (argv.includes("--requirements")) { printRequirements(descriptor); return; }
 

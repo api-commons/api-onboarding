@@ -1,4 +1,4 @@
-# API Onboarding Descriptor (AID)
+# API Onboarding Descriptor (AOD)
 
 **Spec home:** [apicommons.org/onboarding](https://apicommons.org/onboarding/) · **Live descriptors:** [apis.io/.well-known/api-onboarding](https://apis.io/.well-known/api-onboarding) · [apievangelist.com/.well-known/api-onboarding](https://apievangelist.com/.well-known/api-onboarding) · **Story:** [What 36 Providers Taught Me About Programmatic API Onboarding](https://apievangelist.com/2026/07/02/what-36-providers-taught-me-about-programmatic-api-onboarding/)
 

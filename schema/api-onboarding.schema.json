@@ -4,9 +4,9 @@
   "title": "API Onboarding Descriptor",
   "description": "A machine-readable description of what it takes to onboard with an API: getting an account, registering an application, clearing the gates, and walking away with working credentials. Covers the parts of onboarding that OAuth, DCR, and CIMD do not — the account, the plan tiers, the terms of service, the verification queues, and the provider-specific resource model. Designed to be discoverable at /.well-known/api-onboarding and referenced from an APIs.json index.",
   "type": "object",
-  "required": ["aid", "provider", "maturity", "registration", "credentials"],
+  "required": ["aod", "provider", "maturity", "registration", "credentials"],
   "properties": {
-    "aid": {
+    "aod": {
       "type": "string",
       "description": "Version of the API Onboarding Descriptor spec this document conforms to.",
       "const": "0.1"
