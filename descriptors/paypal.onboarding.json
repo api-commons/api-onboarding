@@ -1,0 +1,94 @@
+{
+  "aid": "0.1",
+  "provider": {
+    "name": "PayPal",
+    "url": "https://www.paypal.com",
+    "portalUrl": "https://developer.paypal.com"
+  },
+  "maturity": "console-only",
+  "account": {
+    "required": true,
+    "signupUrl": "https://www.paypal.com/webapps/mpp/account-selection",
+    "agentPolicy": "unspecified",
+    "prerequisites": ["PayPal business or developer account"],
+    "termsOfService": {
+      "url": "https://developer.paypal.com/api/rest/terms/",
+      "acceptance": "console-only"
+    }
+  },
+  "verification": [],
+  "registration": {
+    "applicationNoun": "REST app",
+    "owner": "developer",
+    "mechanisms": [
+      {
+        "type": "console-only",
+        "description": "There is no public API to create a REST app or read back its client_id/secret — Developer Dashboard only (Apps & Credentials -> Create App). Once a human has done that, everything downstream is scriptable.",
+        "docsUrls": ["https://developer.paypal.com/api/rest/"]
+      },
+      {
+        "type": "management-api",
+        "description": "Post-bootstrap: mint short-lived access tokens from the pasted client pair via client_credentials.",
+        "baseUrl": "https://api-m.paypal.com",
+        "auth": "client-pair",
+        "docsUrls": ["https://developer.paypal.com/api/rest/authentication/"]
+      }
+    ]
+  },
+  "authentication": {
+    "methods": [
+      {
+        "id": "client-pair",
+        "type": "basic-env",
+        "env": ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET"],
+        "bootstrap": "Create a REST app in the Developer Dashboard and copy the Client ID and Secret. Sandbox and live credentials are not interchangeable."
+      }
+    ]
+  },
+  "credentials": [
+    {
+      "type": "oauth2-client",
+      "fields": { "client_id": "client_id", "client_secret": "client_secret" },
+      "oneTimeDisplay": false,
+      "rotation": "Secret can be regenerated in the Developer Dashboard."
+    },
+    {
+      "type": "access-token",
+      "fields": { "access_token": "access_token" },
+      "ttl": "expires_in returned per token (short-lived)"
+    }
+  ],
+  "scopes": {
+    "model": "scope-strings",
+    "notes": "Scopes are granted per app in the dashboard and echoed in the token response; a 403 on a product API means valid token, missing product scope."
+  },
+  "flow": {
+    "args": [],
+    "steps": [
+      {
+        "id": "mint_token",
+        "description": "Exchange the pasted client pair for a bearer access token.",
+        "auth": "client-pair",
+        "request": {
+          "method": "POST",
+          "url": "{env.PAYPAL_BASE || https://api-m.sandbox.paypal.com}/v1/oauth2/token",
+          "headers": { "content-type": "application/x-www-form-urlencoded" },
+          "body": { "grant_type": "client_credentials" }
+        }
+      }
+    ],
+    "outputs": {
+      "access_token": "{steps.mint_token.access_token}",
+      "scope": "{steps.mint_token.scope}",
+      "app_id": "{steps.mint_token.app_id}"
+    }
+  },
+  "economics": {
+    "pricingUrl": "https://www.paypal.com/us/business/paypal-business-fees",
+    "rateLimitsUrl": "https://developer.paypal.com/api/rest/rate-limiting/"
+  },
+  "gaps": [
+    "App creation and secret read-back have no API at all — the browser dashboard is load-bearing.",
+    "The company's agentic-commerce positioning is ahead of its own onboarding: an agent cannot register a PayPal app."
+  ]
+}

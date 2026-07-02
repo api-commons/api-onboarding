@@ -1,0 +1,276 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apionboarding.org/schemas/0.1/api-onboarding.schema.json",
+  "title": "API Onboarding Descriptor",
+  "description": "A machine-readable description of what it takes to onboard with an API: getting an account, registering an application, clearing the gates, and walking away with working credentials. Covers the parts of onboarding that OAuth, DCR, and CIMD do not — the account, the plan tiers, the terms of service, the verification queues, and the provider-specific resource model. Designed to be discoverable at /.well-known/api-onboarding and referenced from an APIs.json index.",
+  "type": "object",
+  "required": ["aid", "provider", "maturity", "registration", "credentials"],
+  "properties": {
+    "aid": {
+      "type": "string",
+      "description": "Version of the API Onboarding Descriptor spec this document conforms to.",
+      "const": "0.1"
+    },
+    "provider": {
+      "type": "object",
+      "required": ["name", "url"],
+      "properties": {
+        "name": { "type": "string", "description": "Human name of the API provider." },
+        "url": { "type": "string", "format": "uri", "description": "Provider homepage." },
+        "portalUrl": { "type": "string", "format": "uri", "description": "Developer portal, if distinct from the homepage." },
+        "apisJsonUrl": { "type": "string", "format": "uri", "description": "The provider's APIs.json index, when one exists." }
+      }
+    },
+    "maturity": {
+      "type": "string",
+      "description": "Programmatic-onboarding maturity. self-serve: a stranger (or their agent) can authenticate through a public flow and walk away with credentials — no pre-existing token. bootstrap-token: a real management API exists but the first token is minted by a human in a console. console-only: no complete programmatic path; a browser UI is load-bearing.",
+      "enum": ["self-serve", "bootstrap-token", "console-only"]
+    },
+    "account": {
+      "type": "object",
+      "description": "What it takes to have an account at all — the step before any application exists.",
+      "properties": {
+        "required": { "type": "boolean", "default": true },
+        "signupUrl": { "type": "string", "format": "uri" },
+        "agentPolicy": {
+          "type": "string",
+          "description": "Whether the provider permits non-human/agent-driven onboarding. This is the honesty field: providers who say they are all-in on AI while CAPTCHA-gating signup declare that here.",
+          "enum": ["allowed", "allowed-with-attestation", "prohibited", "unspecified"],
+          "default": "unspecified"
+        },
+        "prerequisites": {
+          "type": "array",
+          "description": "Human-readable conditions that must hold before onboarding can start (e.g. 'Artist Pro plan', 'member of a Google Cloud org with Apigee enabled', 'company page admin').",
+          "items": { "type": "string" }
+        },
+        "plans": {
+          "type": "array",
+          "description": "Plan/tier gates that change what the API will let an application do.",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "requiredFor": { "type": "string", "description": "What this tier unlocks (scopes, products, rate limits)." },
+              "url": { "type": "string", "format": "uri" }
+            }
+          }
+        },
+        "termsOfService": {
+          "type": "object",
+          "properties": {
+            "url": { "type": "string", "format": "uri" },
+            "acceptance": {
+              "type": "string",
+              "description": "How the ToS is accepted during programmatic onboarding.",
+              "enum": ["implicit", "explicit-field", "console-only", "none"]
+            }
+          }
+        }
+      }
+    },
+    "verification": {
+      "type": "array",
+      "description": "Human-in-the-loop verification gates between 'application created' and 'application usable' (LinkedIn page-admin verification, Google branding/data-access review, marketplace review queues).",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "blocking": { "type": "boolean", "description": "True if credentials do not work (or scopes stay locked) until this clears." },
+          "expectedLatency": { "type": "string", "description": "Rough human latency: 'instant', 'days', '30-day admin window'." },
+          "url": { "type": "string", "format": "uri" }
+        }
+      }
+    },
+    "registration": {
+      "type": "object",
+      "description": "How an application comes into existence and how the registration surface is reached.",
+      "required": ["mechanisms"],
+      "properties": {
+        "applicationNoun": { "type": "string", "description": "What the provider calls the thing that holds credentials: App, internal connection, developer app, API token, OAuth client." },
+        "owner": {
+          "type": "string",
+          "description": "Who owns the application resource — matters when admin APIs can list but not mint (Kong's two front doors).",
+          "enum": ["developer", "organization", "admin", "user"]
+        },
+        "mechanisms": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "browser-oauth: public authorization-code+PKCE flow with a bundled/public client (the SoundCloud pattern). manifest: a declarative app manifest posted through a browser approval and exchanged for credentials (the GitHub App Manifest / Slack manifest pattern). management-api: authenticated REST calls against an admin/management plane. portal-api: a developer-portal-scoped API (portal token/cookie). dcr: RFC 7591 dynamic client registration. cimd: OAuth Client ID Metadata Documents — the client_id is a URL. console-only: a human clicks.",
+                "enum": ["browser-oauth", "manifest", "management-api", "portal-api", "dcr", "cimd", "console-only"]
+              },
+              "description": { "type": "string" },
+              "baseUrl": { "type": "string", "format": "uri" },
+              "regionalBaseUrls": {
+                "type": "object",
+                "description": "Per-region hosts keyed by region code, when the management plane is geo-partitioned.",
+                "additionalProperties": { "type": "string", "format": "uri" }
+              },
+              "authorizationEndpoint": { "type": "string", "format": "uri" },
+              "tokenEndpoint": { "type": "string", "format": "uri" },
+              "registrationEndpoint": { "type": "string", "format": "uri", "description": "RFC 7591 endpoint when type is dcr." },
+              "publicClientId": { "type": "string", "description": "The bundled public client_id used to bootstrap a browser-oauth flow." },
+              "scopes": { "type": "array", "description": "OAuth scopes to request when bootstrapping via browser-oauth.", "items": { "type": "string" } },
+              "redirectUri": { "type": "string", "format": "uri", "description": "Loopback redirect the public client is registered with, e.g. http://127.0.0.1:8976/callback." },
+              "docsUrls": { "type": "array", "items": { "type": "string", "format": "uri" } },
+              "auth": { "type": "string", "description": "id of the authentication method (in /authentication/methods) this mechanism requires." }
+            }
+          }
+        }
+      }
+    },
+    "authentication": {
+      "type": "object",
+      "description": "How a caller authenticates to the registration surface itself — the bootstrap problem.",
+      "properties": {
+        "methods": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "type"],
+            "properties": {
+              "id": { "type": "string" },
+              "type": {
+                "type": "string",
+                "description": "oauth-pkce-browser: pop a browser, no pasted token (self-serve). oauth-client-credentials: exchange a pre-provisioned id/secret pair for a bearer token (MuleSoft/Kinde/PayPal/Zoom pattern). bearer-env / basic-env / header-env: pasted credential from env vars. cloud-iam: a cloud provider's own short-lived IAM token (gcloud/az/SigV4-adjacent). request-signing: per-request HMAC signatures (AWS SigV4, Akamai EdgeGrid). cookie-login: a portal session token sent as cookie and/or bearer.",
+                "enum": ["oauth-pkce-browser", "oauth-client-credentials", "bearer-env", "basic-env", "header-env", "cloud-iam", "request-signing", "cookie-login", "none"]
+              },
+              "env": {
+                "type": "array",
+                "description": "Environment variables this method reads (the pasted-token contract).",
+                "items": { "type": "string" }
+              },
+              "header": { "type": "string", "description": "Header name when type is header-env and it is not Authorization." },
+              "scheme": { "type": "string", "description": "Authorization scheme word when it is not Bearer (SSWS, raw secret with no scheme, etc.)." },
+              "tokenEndpoint": { "type": "string", "format": "uri", "description": "Token endpoint for oauth-client-credentials exchange." },
+              "audience": { "type": "string", "description": "OAuth audience parameter when the token endpoint requires one." },
+              "signing": { "type": "string", "description": "Signing algorithm when type is request-signing: aws-sigv4, akamai-eg1-hmac-sha256." },
+              "cookieName": { "type": "string", "description": "Cookie name when type is cookie-login (e.g. portalaccesstoken)." },
+              "tokenPrefix": { "type": "string", "description": "Expected token prefix for sanity checks (kpat_, sk_, xoxp-)." },
+              "bootstrap": { "type": "string", "description": "One sentence: what a human must do once, in a console, before this method works. Empty/absent means no human bootstrap — the self-serve bar." },
+              "notes": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "credentials": {
+      "type": "array",
+      "description": "What you walk away with.",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["oauth2-client", "api-key", "personal-access-token", "access-token", "service-account", "webhook-secret"]
+          },
+          "fields": {
+            "type": "object",
+            "description": "Map of canonical field names (client_id, client_secret, api_key, access_token) to the provider's own vocabulary (consumerKey, integration token, kpat).",
+            "additionalProperties": { "type": "string" }
+          },
+          "ttl": { "type": "string", "description": "Default lifetime ('60 days', 'none', 'configurable per token')." },
+          "rotation": { "type": "string", "description": "How rotation works, if the provider supports it." },
+          "oneTimeDisplay": { "type": "boolean", "description": "True when the secret is shown once and never again — an agent must capture it or start over." }
+        }
+      }
+    },
+    "scopes": {
+      "type": "object",
+      "description": "How authorization is sliced — the least standardized surface of all.",
+      "properties": {
+        "model": {
+          "type": "string",
+          "enum": ["scope-strings", "api-products", "permission-matrix", "capability-checkboxes", "product-tiers", "resource-selection", "none"]
+        },
+        "vocabularyUrl": { "type": "string", "format": "uri" },
+        "resourceSelection": { "type": "string", "description": "The unit of resource access when access is granted per-resource: repos, pages, workspaces, zones, projects." },
+        "notes": { "type": "string" }
+      }
+    },
+    "flow": {
+      "type": "object",
+      "description": "The executable half: ordered HTTP steps a generic engine can run to go from nothing to credentials. Templates may reference {env.VAR}, {arg.name}, and {steps.<id>.<json.path>}.",
+      "properties": {
+        "args": {
+          "type": "array",
+          "description": "Named inputs the flow needs from the caller (application name, developer email).",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "description": { "type": "string" },
+              "required": { "type": "boolean", "default": false },
+              "default": { "type": "string" }
+            }
+          }
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "request"],
+            "properties": {
+              "id": { "type": "string" },
+              "description": { "type": "string" },
+              "auth": { "type": "string", "description": "id of the authentication method to apply." },
+              "request": {
+                "type": "object",
+                "required": ["method", "url"],
+                "properties": {
+                  "method": { "type": "string", "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"] },
+                  "url": { "type": "string" },
+                  "headers": { "type": "object", "additionalProperties": { "type": "string" } },
+                  "body": { "description": "JSON body template; string values are template-expanded." }
+                }
+              },
+              "onStatus": {
+                "type": "object",
+                "description": "Recovery table keyed by HTTP status. The 409 entry is where idempotency lives: 'already exists' routes to a read-back step instead of failing.",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "action": { "type": "string", "enum": ["goto", "continue", "fail"] },
+                    "step": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              },
+              "skipIf": { "type": "string", "description": "Template expression; when it expands non-empty the step is skipped (e.g. a login step skipped when a token env var is already set)." }
+            }
+          }
+        },
+        "outputs": {
+          "type": "object",
+          "description": "Map of canonical output keys to template expressions over step results, e.g. client_id: {steps.create_app.credentials.0.consumerKey}.",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+    "economics": {
+      "type": "object",
+      "description": "Pointers to the business layer — the SLA4OAI graft point. Kept as references in 0.1.",
+      "properties": {
+        "pricingUrl": { "type": "string", "format": "uri" },
+        "freeTier": { "type": "string" },
+        "rateLimitsUrl": { "type": "string", "format": "uri" },
+        "slaUrl": { "type": "string", "format": "uri" }
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "description": "Honest statement of what still requires a human, for providers not yet at self-serve. Each gap is a target for the provider to close.",
+      "items": { "type": "string" }
+    }
+  }
+}

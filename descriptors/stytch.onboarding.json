@@ -1,0 +1,93 @@
+{
+  "aid": "0.1",
+  "provider": {
+    "name": "Stytch (Connected Apps)",
+    "url": "https://stytch.com",
+    "portalUrl": "https://stytch.com/docs"
+  },
+  "maturity": "self-serve",
+  "account": {
+    "required": false,
+    "agentPolicy": "allowed",
+    "prerequisites": ["Only the target project's public project_id — no secret, no account with Stytch"],
+    "termsOfService": { "url": "https://stytch.com/legal/api-terms", "acceptance": "implicit" }
+  },
+  "verification": [],
+  "registration": {
+    "applicationNoun": "connected app client",
+    "owner": "developer",
+    "mechanisms": [
+      {
+        "type": "dcr",
+        "description": "Genuinely anonymous RFC 7591 Dynamic Client Registration, built explicitly for the agentic/MCP story. Public clients get no secret and use PKCE.",
+        "registrationEndpoint": "https://test.stytch.com/v1/public/{project_id}/oauth2/register",
+        "auth": "anonymous",
+        "docsUrls": [
+          "https://stytch.com/docs/b2b/api/connected-app-dynamic-client-registration",
+          "https://stytch.com/blog/mcp-oauth-dynamic-client-registration/"
+        ]
+      },
+      {
+        "type": "management-api",
+        "description": "Authenticated management path: HTTP Basic base64(project_id:secret) creates confidential connected-app clients.",
+        "baseUrl": "https://api.stytch.com",
+        "auth": "management",
+        "docsUrls": ["https://stytch.com/docs/b2b/api/connected-apps-create"]
+      }
+    ]
+  },
+  "authentication": {
+    "methods": [
+      { "id": "anonymous", "type": "none", "bootstrap": "" },
+      {
+        "id": "management",
+        "type": "basic-env",
+        "env": ["STYTCH_PROJECT_ID", "STYTCH_SECRET"],
+        "bootstrap": "Copy the project_id and secret from the Stytch dashboard for your project."
+      }
+    ]
+  },
+  "credentials": [
+    {
+      "type": "oauth2-client",
+      "fields": { "client_id": "client_id", "client_secret": "client_secret" },
+      "oneTimeDisplay": true,
+      "rotation": "Confidential client secrets are shown exactly once; public (DCR) clients have no secret and use PKCE."
+    }
+  ],
+  "scopes": {
+    "model": "scope-strings",
+    "notes": "client_type taxonomy (first_party / first_party_public / third_party / third_party_public) plus token_endpoint_auth_method."
+  },
+  "flow": {
+    "args": [
+      { "name": "project_id", "description": "Target Stytch project id (public)", "required": true },
+      { "name": "name", "description": "Client name", "required": true },
+      { "name": "redirect_uri", "description": "Redirect URI for the public client", "required": false, "default": "http://127.0.0.1:8976/callback" }
+    ],
+    "steps": [
+      {
+        "id": "register",
+        "description": "Anonymous RFC 7591 registration of a third-party public client.",
+        "auth": "anonymous",
+        "request": {
+          "method": "POST",
+          "url": "{env.STYTCH_BASE || https://test.stytch.com}/v1/public/{arg.project_id}/oauth2/register",
+          "body": {
+            "client_name": "{arg.name}",
+            "redirect_uris": ["{arg.redirect_uri}"],
+            "token_endpoint_auth_method": "none"
+          }
+        }
+      }
+    ],
+    "outputs": {
+      "client_id": "{steps.register.client_id}",
+      "client_secret": "{steps.register.client_secret}",
+      "registration_client_uri": "{steps.register.registration_client_uri}"
+    }
+  },
+  "gaps": [
+    "The canonical DCR endpoint is the project's custom authentication domain (https://{projectDomain}/v1/oauth2/register); the legacy public path used here should be verified per project."
+  ]
+}

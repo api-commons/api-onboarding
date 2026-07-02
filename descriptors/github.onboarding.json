@@ -1,0 +1,74 @@
+{
+  "aid": "0.1",
+  "provider": {
+    "name": "GitHub (GitHub Apps)",
+    "url": "https://github.com",
+    "portalUrl": "https://docs.github.com/en/apps"
+  },
+  "maturity": "self-serve",
+  "account": {
+    "required": true,
+    "signupUrl": "https://github.com/signup",
+    "agentPolicy": "unspecified",
+    "prerequisites": ["GitHub account; org apps require permission on the organization"]
+  },
+  "verification": [],
+  "registration": {
+    "applicationNoun": "GitHub App",
+    "owner": "user",
+    "mechanisms": [
+      {
+        "type": "manifest",
+        "description": "GitHub App Manifest flow: a local server form-POSTs a declarative manifest to github.com, the user approves in the browser, and the redirect code is exchanged UNauthenticated for the full credential set. The code IS the credential — no pre-existing token anywhere. The only provider in the corpus besides SoundCloud where a stranger can start from zero.",
+        "baseUrl": "https://api.github.com",
+        "registrationEndpoint": "https://api.github.com/app-manifests/{code}/conversions",
+        "docsUrls": [
+          "https://docs.github.com/en/apps/sharing-github-apps/registering-a-github-app-from-a-manifest",
+          "https://docs.github.com/en/rest/apps/apps#create-a-github-app-from-a-manifest"
+        ]
+      }
+    ]
+  },
+  "authentication": {
+    "methods": [
+      {
+        "id": "browser-manifest",
+        "type": "none",
+        "bootstrap": "",
+        "notes": "The manifest must be a form-POST body field, so a helper serves a local auto-submitting HTML form; the conversion exchange requires no authentication. The one-time code is valid for one hour."
+      }
+    ]
+  },
+  "credentials": [
+    {
+      "type": "oauth2-client",
+      "fields": {
+        "client_id": "client_id",
+        "client_secret": "client_secret"
+      },
+      "oneTimeDisplay": true
+    },
+    {
+      "type": "webhook-secret",
+      "fields": { "webhook_secret": "webhook_secret" },
+      "oneTimeDisplay": true
+    },
+    {
+      "type": "private-key",
+      "fields": { "private_key": "pem" },
+      "oneTimeDisplay": true,
+      "rotation": "Generate a new private key from the app settings page; old keys can be revoked."
+    }
+  ],
+  "scopes": {
+    "model": "permission-matrix",
+    "vocabularyUrl": "https://docs.github.com/en/rest/authentication/permissions-required-for-github-apps",
+    "resourceSelection": "repositories",
+    "notes": "Declared as default_permissions + default_events in the manifest; installation selects repositories."
+  },
+  "gaps": [
+    "App names must be globally unique and a collision fails at the browser form — no programmatic pre-check.",
+    "The browser approval step is inherently interactive; there is no headless path (by design).",
+    "The manifest browser flow is not yet executable by the generic engine (mechanism type: manifest)."
+  ]
+}

@@ -1,0 +1,161 @@
+{
+  "aid": "0.1",
+  "provider": {
+    "name": "Kong Konnect",
+    "url": "https://konghq.com/products/kong-konnect",
+    "portalUrl": "https://developer.konghq.com"
+  },
+  "maturity": "bootstrap-token",
+  "account": {
+    "required": true,
+    "agentPolicy": "unspecified",
+    "prerequisites": [
+      "A developer identity on the target Dev Portal (signup/approval is per-portal, configured by the portal owner)"
+    ]
+  },
+  "verification": [
+    {
+      "name": "Portal registration approval",
+      "description": "Application registration against a published API may require portal-admin approval before credentials appear, depending on portal settings.",
+      "blocking": true,
+      "expectedLatency": "instant to days (portal-configured)"
+    }
+  ],
+  "registration": {
+    "applicationNoun": "application",
+    "owner": "developer",
+    "mechanisms": [
+      {
+        "type": "portal-api",
+        "description": "The door that mints credentials: the Dev Portal's own API. A developer logs in for a portalaccesstoken, creates an application, registers it against a published API, and receives an api_key (Key-Auth) or client_id/client_secret (OIDC/DCR strategy).",
+        "baseUrl": "{portalUrl}/api",
+        "auth": "portal",
+        "docsUrls": [
+          "https://developer.konghq.com/dev-portal/self-service/",
+          "https://developer.konghq.com/dev-portal/application-registration/"
+        ]
+      },
+      {
+        "type": "management-api",
+        "description": "The admin door: platform API with a kpat_ personal access token. Can list and approve developer applications but cannot mint a developer's secret — applications belong to developers.",
+        "baseUrl": "https://global.api.konghq.com/v3",
+        "regionalBaseUrls": {
+          "us": "https://us.api.konghq.com/v3",
+          "eu": "https://eu.api.konghq.com/v3",
+          "au": "https://au.api.konghq.com/v3",
+          "me": "https://me.api.konghq.com/v3",
+          "in": "https://in.api.konghq.com/v3",
+          "sg": "https://sg.api.konghq.com/v3"
+        },
+        "auth": "kpat",
+        "docsUrls": ["https://developer.konghq.com/konnect-api/"]
+      }
+    ]
+  },
+  "authentication": {
+    "methods": [
+      {
+        "id": "portal",
+        "type": "cookie-login",
+        "env": ["KONNECT_PORTAL_TOKEN"],
+        "cookieName": "portalaccesstoken",
+        "bootstrap": "Log in to the Dev Portal as a developer and capture the portalaccesstoken, or provide developer email/password for a basic login step."
+      },
+      {
+        "id": "kpat",
+        "type": "bearer-env",
+        "env": ["KONNECT_TOKEN"],
+        "tokenPrefix": "kpat_",
+        "bootstrap": "Generate a Personal Access Token in the Konnect console (admin plane; cannot mint developer secrets)."
+      }
+    ]
+  },
+  "credentials": [
+    {
+      "type": "api-key",
+      "fields": { "api_key": "key" },
+      "oneTimeDisplay": false
+    },
+    {
+      "type": "oauth2-client",
+      "fields": { "client_id": "client_id", "client_secret": "client_secret" },
+      "oneTimeDisplay": true,
+      "rotation": "OIDC/DCR secrets are minted in the wired identity provider (Auth0, Okta, Azure AD) and may be shown once."
+    }
+  ],
+  "scopes": {
+    "model": "api-products",
+    "notes": "Credential shape depends on the auth strategy the API publisher chose (Key-Auth vs OIDC/DCR); auth_strategy_id must be passed when a portal exposes more than one."
+  },
+  "flow": {
+    "args": [
+      { "name": "name", "description": "Application name", "required": true },
+      { "name": "description", "description": "Application description", "required": false },
+      { "name": "auth_strategy", "description": "auth_strategy_id when the portal exposes more than one", "required": false }
+    ],
+    "steps": [
+      {
+        "id": "login",
+        "description": "Basic developer login; skipped when KONNECT_PORTAL_TOKEN is already set.",
+        "skipIf": "{env.KONNECT_PORTAL_TOKEN}",
+        "producesToken": "portal",
+        "request": {
+          "method": "POST",
+          "url": "{env.KONNECT_PORTAL_URL}/api/v3/developer/authenticate/basic",
+          "body": {
+            "username": "{env.KONNECT_PORTAL_EMAIL}",
+            "password": "{env.KONNECT_PORTAL_PASSWORD}"
+          }
+        }
+      },
+      {
+        "id": "create_app",
+        "auth": "portal",
+        "request": {
+          "method": "POST",
+          "url": "{env.KONNECT_PORTAL_URL}/api/v3/applications",
+          "body": {
+            "name": "{arg.name}",
+            "description": "{arg.description}",
+            "auth_strategy_id": "{arg.auth_strategy}"
+          }
+        },
+        "onStatus": {
+          "409": { "action": "goto", "step": "list_apps", "message": "Application already exists; reading it back." }
+        }
+      },
+      {
+        "id": "list_apps",
+        "skipIf": "{steps.create_app.id}",
+        "auth": "portal",
+        "request": {
+          "method": "GET",
+          "url": "{env.KONNECT_PORTAL_URL}/api/v3/applications"
+        }
+      },
+      {
+        "id": "credential",
+        "auth": "portal",
+        "request": {
+          "method": "POST",
+          "url": "{env.KONNECT_PORTAL_URL}/api/v3/applications/{steps.create_app.id}/credentials",
+          "body": { "display_name": "{arg.name}" }
+        },
+        "onStatus": {
+          "400": { "action": "continue", "message": "No separate credential resource; using app-level credentials." },
+          "404": { "action": "continue", "message": "No separate credential resource; using app-level credentials." }
+        }
+      }
+    ],
+    "outputs": {
+      "client_id": "{steps.create_app.client_id || steps.create_app.credentials.client_id}",
+      "client_secret": "{steps.create_app.client_secret || steps.create_app.credentials.client_secret}",
+      "api_key": "{steps.credential.key || steps.credential.api_key}",
+      "application_id": "{steps.create_app.id}"
+    }
+  },
+  "gaps": [
+    "The bootstrap: the first portal identity (or kpat_) is still minted by a human in a console — no public, anonymous browser-OAuth flow at a fixed URL.",
+    "The developer-facing portal API is versioned per portal and thinly documented publicly; paths and credential field names should be verified per portal."
+  ]
+}

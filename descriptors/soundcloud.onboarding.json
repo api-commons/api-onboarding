@@ -1,0 +1,118 @@
+{
+  "aid": "0.1",
+  "provider": {
+    "name": "SoundCloud",
+    "url": "https://soundcloud.com",
+    "portalUrl": "https://developers.soundcloud.com"
+  },
+  "maturity": "self-serve",
+  "account": {
+    "required": true,
+    "signupUrl": "https://soundcloud.com/signup",
+    "agentPolicy": "unspecified",
+    "prerequisites": ["SoundCloud account"],
+    "plans": [
+      {
+        "name": "Artist Pro",
+        "requiredFor": "API application registration",
+        "url": "https://checkout.soundcloud.com/artist"
+      }
+    ],
+    "termsOfService": {
+      "url": "https://developers.soundcloud.com/docs/api/terms-of-use",
+      "acceptance": "implicit"
+    }
+  },
+  "verification": [],
+  "registration": {
+    "applicationNoun": "app",
+    "owner": "user",
+    "mechanisms": [
+      {
+        "type": "browser-oauth",
+        "description": "The pattern that set the bar: a bundled public client pops a browser for OAuth (PKCE), then the resulting user token registers the app against the registration API. One file, no npm install, credentials on stdout.",
+        "baseUrl": "https://api-reg.soundcloud.com",
+        "authorizationEndpoint": "https://secure.soundcloud.com/authorize",
+        "tokenEndpoint": "https://secure.soundcloud.com/oauth/token",
+        "publicClientId": "nXIZT4VQQYkgHs75vpIYbnINQciCkV5Y",
+        "redirectUri": "http://127.0.0.1:8765/callback",
+        "auth": "browser",
+        "docsUrls": [
+          "https://developers.soundcloud.com/blog/api-credentials-cli-openapi-github",
+          "https://github.com/soundcloud/api/blob/master/scripts/sc-api-auth.mjs"
+        ]
+      }
+    ]
+  },
+  "authentication": {
+    "methods": [
+      {
+        "id": "browser",
+        "type": "oauth-pkce-browser",
+        "bootstrap": ""
+      }
+    ]
+  },
+  "credentials": [
+    {
+      "type": "oauth2-client",
+      "fields": {
+        "client_id": "client_id",
+        "client_secret": "client_secret"
+      },
+      "ttl": "none documented",
+      "oneTimeDisplay": false
+    }
+  ],
+  "scopes": {
+    "model": "none",
+    "notes": "App-level access; no per-scope selection at registration time."
+  },
+  "flow": {
+    "args": [
+      { "name": "name", "description": "Application name", "required": true },
+      { "name": "description", "description": "What the integration does", "required": false },
+      { "name": "website", "description": "Application website URL", "required": false }
+    ],
+    "steps": [
+      {
+        "id": "create_app",
+        "description": "Register the app; a 403 user_already_has_application routes to the read-back.",
+        "auth": "browser",
+        "request": {
+          "method": "POST",
+          "url": "https://api-reg.soundcloud.com/me/apps",
+          "body": {
+            "name": "{arg.name}",
+            "description": "{arg.description}",
+            "website": "{arg.website}"
+          }
+        },
+        "onStatus": {
+          "403": { "action": "goto", "step": "list_apps", "message": "You already have an application; returning it instead of creating a second one." }
+        }
+      },
+      {
+        "id": "list_apps",
+        "skipIf": "{steps.create_app.client_id}",
+        "auth": "browser",
+        "request": {
+          "method": "GET",
+          "url": "https://api-reg.soundcloud.com/me/apps"
+        }
+      }
+    ],
+    "outputs": {
+      "client_id": "{steps.create_app.client_id || steps.list_apps.0.client_id}",
+      "client_secret": "{steps.create_app.client_secret || steps.list_apps.0.client_secret}",
+      "name": "{steps.create_app.name || steps.list_apps.0.name}"
+    }
+  },
+  "economics": {
+    "pricingUrl": "https://checkout.soundcloud.com/artist",
+    "rateLimitsUrl": "https://developers.soundcloud.com/docs/api/rate-limits"
+  },
+  "gaps": [
+    "Account creation and the Artist Pro upgrade are still browser-only."
+  ]
+}

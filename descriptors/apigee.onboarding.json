@@ -1,0 +1,121 @@
+{
+  "aid": "0.1",
+  "provider": {
+    "name": "Google Cloud Apigee (Apigee X)",
+    "url": "https://cloud.google.com/apigee",
+    "portalUrl": "https://cloud.google.com/apigee/docs"
+  },
+  "maturity": "bootstrap-token",
+  "account": {
+    "required": true,
+    "agentPolicy": "unspecified",
+    "prerequisites": [
+      "Google Cloud account with an Apigee organization you administer",
+      "Caller identity holds Apigee Developer Admin or Organization Admin on the org"
+    ]
+  },
+  "verification": [],
+  "registration": {
+    "applicationNoun": "developer app",
+    "owner": "developer",
+    "mechanisms": [
+      {
+        "type": "management-api",
+        "description": "Clean two-resource model — create a Developer, then a Developer App under it; the app response carries consumerKey/consumerSecret. Gated behind Google Cloud IAM: you must already be inside the house.",
+        "baseUrl": "https://apigee.googleapis.com/v1",
+        "auth": "gcloud",
+        "docsUrls": [
+          "https://cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.developers/create",
+          "https://cloud.google.com/apigee/docs/reference/apis/apigee/rest/v1/organizations.developers.apps/create"
+        ]
+      }
+    ]
+  },
+  "authentication": {
+    "methods": [
+      {
+        "id": "gcloud",
+        "type": "cloud-iam",
+        "env": ["GOOGLE_ACCESS_TOKEN"],
+        "bootstrap": "export GOOGLE_ACCESS_TOKEN=\"$(gcloud auth print-access-token)\" from an identity with the Apigee Developer Admin role, or mint from a service account."
+      }
+    ]
+  },
+  "credentials": [
+    {
+      "type": "oauth2-client",
+      "fields": {
+        "client_id": "consumerKey",
+        "client_secret": "consumerSecret"
+      },
+      "ttl": "configurable via keyExpiresIn (ms; -1 = never)",
+      "oneTimeDisplay": false
+    }
+  ],
+  "scopes": {
+    "model": "api-products",
+    "notes": "Access is granted by attaching API products to the developer app; the consumerKey is valid per product."
+  },
+  "flow": {
+    "args": [
+      { "name": "name", "description": "Developer app name", "required": true },
+      { "name": "developer_email", "description": "Developer email (created if absent)", "required": true },
+      { "name": "first_name", "description": "Developer first name", "required": true },
+      { "name": "last_name", "description": "Developer last name", "required": true },
+      { "name": "api_product", "description": "API product to attach", "required": false }
+    ],
+    "steps": [
+      {
+        "id": "ensure_developer",
+        "description": "Create the developer; 409 means already registered, which is success.",
+        "auth": "gcloud",
+        "request": {
+          "method": "POST",
+          "url": "https://apigee.googleapis.com/v1/organizations/{env.APIGEE_ORG}/developers",
+          "body": {
+            "email": "{arg.developer_email}",
+            "firstName": "{arg.first_name}",
+            "lastName": "{arg.last_name}",
+            "userName": "{arg.developer_email}"
+          }
+        },
+        "onStatus": {
+          "409": { "action": "continue", "message": "Developer already exists; reusing." }
+        }
+      },
+      {
+        "id": "create_app",
+        "auth": "gcloud",
+        "request": {
+          "method": "POST",
+          "url": "https://apigee.googleapis.com/v1/organizations/{env.APIGEE_ORG}/developers/{arg.developer_email}/apps",
+          "body": {
+            "name": "{arg.name}",
+            "apiProducts": ["{arg.api_product}"]
+          }
+        },
+        "onStatus": {
+          "409": { "action": "goto", "step": "read_app", "message": "App already exists; returning its credentials." }
+        }
+      },
+      {
+        "id": "read_app",
+        "skipIf": "{steps.create_app.credentials.0.consumerKey}",
+        "auth": "gcloud",
+        "request": {
+          "method": "GET",
+          "url": "https://apigee.googleapis.com/v1/organizations/{env.APIGEE_ORG}/developers/{arg.developer_email}/apps/{arg.name}"
+        }
+      }
+    ],
+    "outputs": {
+      "client_id": "{steps.create_app.credentials.0.consumerKey || steps.read_app.credentials.0.consumerKey}",
+      "client_secret": "{steps.create_app.credentials.0.consumerSecret || steps.read_app.credentials.0.consumerSecret}",
+      "app_name": "{steps.create_app.name || steps.read_app.name}"
+    }
+  },
+  "gaps": [
+    "No self-serve front door: no browser OAuth registration, no RFC 7591 DCR — you must hold IAM on an org before anyone can be onboarded.",
+    "The sanctioned fix would be dynamic client registration or a delegated, narrowly-scoped onboarding token."
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "aid": "0.1",
+  "provider": { "name": "Mock Provider", "url": "http://127.0.0.1:8977" },
+  "maturity": "bootstrap-token",
+  "registration": {
+    "applicationNoun": "developer app",
+    "owner": "developer",
+    "mechanisms": [
+      { "type": "management-api", "baseUrl": "http://127.0.0.1:8977/v1", "auth": "token" }
+    ]
+  },
+  "authentication": {
+    "methods": [
+      { "id": "token", "type": "bearer-env", "env": ["MOCK_TOKEN"], "bootstrap": "export MOCK_TOKEN=mock-token-123" }
+    ]
+  },
+  "credentials": [
+    { "type": "oauth2-client", "fields": { "client_id": "consumerKey", "client_secret": "consumerSecret" } }
+  ],
+  "flow": {
+    "args": [
+      { "name": "name", "description": "App name", "required": true },
+      { "name": "developer_email", "description": "Developer email", "required": true }
+    ],
+    "steps": [
+      {
+        "id": "ensure_developer",
+        "auth": "token",
+        "request": {
+          "method": "POST",
+          "url": "http://127.0.0.1:8977/v1/developers",
+          "body": { "email": "{arg.developer_email}" }
+        },
+        "onStatus": { "409": { "action": "continue", "message": "Developer already exists; reusing." } }
+      },
+      {
+        "id": "create_app",
+        "auth": "token",
+        "request": {
+          "method": "POST",
+          "url": "http://127.0.0.1:8977/v1/developers/{arg.developer_email}/apps",
+          "body": { "name": "{arg.name}" }
+        },
+        "onStatus": { "409": { "action": "goto", "step": "read_app", "message": "App exists; reading it back." } }
+      },
+      {
+        "id": "read_app",
+        "skipIf": "{steps.create_app.credentials.0.consumerKey}",
+        "auth": "token",
+        "request": {
+          "method": "GET",
+          "url": "http://127.0.0.1:8977/v1/developers/{arg.developer_email}/apps/{arg.name}"
+        }
+      }
+    ],
+    "outputs": {
+      "client_id": "{steps.create_app.credentials.0.consumerKey || steps.read_app.credentials.0.consumerKey}",
+      "client_secret": "{steps.create_app.credentials.0.consumerSecret || steps.read_app.credentials.0.consumerSecret}"
+    }
+  }
+}
