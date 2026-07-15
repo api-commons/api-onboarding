@@ -271,6 +271,33 @@
       "type": "array",
       "description": "Honest statement of what still requires a human, for providers not yet at self-serve. Each gap is a target for the provider to close.",
       "items": { "type": "string" }
+    },
+    "securityProfile": {
+      "type": "object",
+      "description": "Which authorization-security tier the credentials this onboarding yields land you in, per the API Authorization Profile (https://apicommons.org/api-authorization). Lets a descriptor declare its FAPI/OAuth posture so it can be checked by the api-authorization ruleset.",
+      "properties": {
+        "conformsTo": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the profile (and tier) the resulting credentials conform to, e.g. https://apicommons.org/api-authorization/high."
+        },
+        "tier": {
+          "type": "string",
+          "description": "normal: RFC 9700 / OAuth 2.1 baseline. high: FAPI 2.0 (sender-constrained tokens, private_key_jwt/mTLS client auth, PAR, PKCE S256).",
+          "enum": ["normal", "high"]
+        },
+        "oauthMetadataUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "The authorization server's RFC 8414 metadata document (/.well-known/oauth-authorization-server or /.well-known/openid-configuration), against which the profile's Target-B rules can be linted."
+        },
+        "senderConstraining": {
+          "type": "string",
+          "description": "How access tokens are bound to the client, if at all.",
+          "enum": ["dpop", "mtls", "none", "unspecified"],
+          "default": "unspecified"
+        }
+      }
     }
   }
 }
