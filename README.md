@@ -47,5 +47,4 @@ A machine-readable building block from **[API Commons](https://apicommons.org)**
 **Related building blocks**
 - [api-authorization](https://github.com/api-commons/api-authorization) — the two-tier OAuth 2.1 / FAPI 2.0 profile this descriptor references via `securityProfile`
 - [plans](https://github.com/api-commons/plans) — machine-readable API access plans, tiers, and pricing
-- [tiers](https://github.com/api-commons/tiers) — the access-tier schema behind an API's plan gates
 - [use-cases](https://github.com/api-commons/use-cases) — machine-readable API use-case building blocks
