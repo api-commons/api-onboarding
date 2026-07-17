@@ -1,4 +1,4 @@
-# API Onboarding Descriptor (AOD)
+# API Onboarding Descriptor (AID)
 
 **Spec home:** [apicommons.org/onboarding](https://apicommons.org/onboarding/) · **Live descriptors:** [apis.io/.well-known/api-onboarding](https://apis.io/.well-known/api-onboarding) · [apievangelist.com/.well-known/api-onboarding](https://apievangelist.com/.well-known/api-onboarding) · **Story:** [What 36 Providers Taught Me About Programmatic API Onboarding](https://apievangelist.com/2026/07/02/what-36-providers-taught-me-about-programmatic-api-onboarding/)
 
@@ -39,3 +39,13 @@ The engine ([engine/api-onboard.mjs](engine/api-onboard.mjs), Node 18+ stdlib, n
 ## Relationship to existing standards
 
 This spec deliberately does **not** reinvent the handshake. Where a provider supports RFC 7591 DCR or CIMD, the descriptor just points at it. Where a provider is an OAuth 2.1 authorization server with RFC 8414 metadata, the descriptor references those endpoints. The descriptor is the layer *around* those standards: discovery of which ones apply, plus the account/plan/ToS/verification reality they all assume away.
+
+## Part of API Commons
+
+A machine-readable building block from **[API Commons](https://apicommons.org)** — open specifications and schemas for the APIs you produce and consume. See all building blocks and tools at **[apicommons.org](https://apicommons.org)** and the tools at **[apicommons.org/tools](https://apicommons.org/tools/)**.
+
+**Related building blocks**
+- [api-authorization](https://github.com/api-commons/api-authorization) — the two-tier OAuth 2.1 / FAPI 2.0 profile this descriptor references via `securityProfile`
+- [plans](https://github.com/api-commons/plans) — machine-readable API access plans, tiers, and pricing
+- [tiers](https://github.com/api-commons/tiers) — the access-tier schema behind an API's plan gates
+- [use-cases](https://github.com/api-commons/use-cases) — machine-readable API use-case building blocks
