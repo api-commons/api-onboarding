@@ -11,7 +11,7 @@ The API Onboarding Descriptor is a machine-readable document, discoverable at `/
 - **maturity** — the honest bucket: `self-serve` (a stranger or their agent walks up, authenticates through a public flow, and leaves with credentials — the SoundCloud bar), `bootstrap-token` (a real management API, but a human mints the first token in a console), or `console-only`.
 - **account** — signup, prerequisites, plan gates, ToS, and an `agentPolicy` field: whether the provider actually permits non-human onboarding, or just says they're all-in on AI.
 - **verification** — the human-in-the-loop queues between "app created" and "app usable," with expected latency.
-- **registration** — the mechanisms that exist (`browser-oauth`, `management-api`, `portal-api`, `dcr`, `cimd`, `console-only`), their endpoints, and what the provider calls an application.
+- **registration** — the mechanisms that exist (`open`, `browser-oauth`, `manifest`, `management-api`, `portal-api`, `dcr`, `cimd`, `aauth`, `console-only`), their endpoints, and what the provider calls an application.
 - **authentication** — how you reach the registration surface, and the one-time human `bootstrap` each method still requires. An empty bootstrap is the goal state.
 - **credentials** — what you walk away with, mapped from the provider's vocabulary (consumerKey, integration token) to canonical fields (client_id, api_key), with TTL, rotation, and one-time-display flags.
 - **scopes** — which of the six-plus authorization models this provider uses (scope strings, API products, permission matrices, capability checkboxes, product tiers, resource selection).
