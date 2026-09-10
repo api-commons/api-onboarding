@@ -71,17 +71,38 @@
     },
     "verification": {
       "type": "array",
-      "description": "Human-in-the-loop verification gates between 'application created' and 'application usable' (LinkedIn page-admin verification, Google branding/data-access review, marketplace review queues).",
+      "description": "The gates between 'application created' and 'application usable'. Two kinds, and a descriptor may carry both. A HUMAN gate is a review somebody performs (LinkedIn page-admin verification, Google branding/data-access review, a marketplace queue), identified by `name`. A CONSUMER-ATTESTATION gate is a fact the caller must already hold about itself, identified by `facet` and the `min_grade` it must be held at — the machine-readable form of the same question, so a consumer can tell BEFORE it tries whether it can onboard, and precisely what it is missing if it cannot.",
       "items": {
         "type": "object",
-        "required": ["name"],
-        "properties": {
-          "name": { "type": "string" },
-          "description": { "type": "string" },
-          "blocking": { "type": "boolean", "description": "True if credentials do not work (or scopes stay locked) until this clears." },
-          "expectedLatency": { "type": "string", "description": "Rough human latency: 'instant', 'days', '30-day admin window'." },
-          "url": { "type": "string", "format": "uri" }
-        }
+        "oneOf": [
+          {
+            "title": "Human review gate",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "description": { "type": "string" },
+              "blocking": { "type": "boolean", "description": "True if credentials do not work (or scopes stay locked) until this clears." },
+              "expectedLatency": { "type": "string", "description": "Rough human latency: 'instant', 'days', '30-day admin window'." },
+              "url": { "type": "string", "format": "uri" }
+            }
+          },
+          {
+            "title": "Consumer attestation requirement",
+            "description": "A fact the consumer must hold, at a stated strength. Objects carrying a required grade rather than a bare list of facet names: a provider that requires domain control VERIFIED and one that will accept it DECLARED are making materially different demands, and a name-only list collapses them into one. Chosen while the field was empty in every published descriptor, because widening a format after consumers parse it is strictly worse than starting wide.",
+            "required": ["facet", "min_grade"],
+            "properties": {
+              "facet": { "type": "string", "description": "The consumer facet or check required, e.g. 'domain_control', 'operator_email'." },
+              "min_grade": {
+                "type": "string",
+                "description": "A FLOOR, not an equality — a consumer holding 'verified' satisfies a requirement of 'attested'. Ordering: verified > attested > declared > absent.",
+                "enum": ["verified", "attested", "declared"]
+              },
+              "description": { "type": "string" },
+              "blocking": { "type": "boolean", "description": "True if credentials do not work (or scopes stay locked) until the consumer holds this." },
+              "vocabulary": { "type": "string", "format": "uri", "description": "Where these facet names and grades are defined, so a consumer resolves them rather than guessing. The provider states its own vocabulary; there is no registry, and this format does not create one." }
+            }
+          }
+        ]
       }
     },
     "registration": {
