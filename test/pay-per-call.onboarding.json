@@ -1,0 +1,27 @@
+{
+  "aod": "0.1",
+  "provider": { "name": "Example Pay-Per-Call Provider", "url": "https://api.example.com" },
+  "maturity": "self-serve",
+  "account": { "required": false, "agentPolicy": "allowed" },
+  "verification": [],
+  "registration": {
+    "applicationNoun": "none",
+    "mechanisms": [
+      {
+        "type": "pay-per-call",
+        "baseUrl": "https://api.example.com/v1",
+        "description": "Every resource answers an unpaid request with 402 Payment Required and its price; retry with payment attached.",
+        "payment": {
+          "protocols": ["x402"],
+          "discoveryUrl": "https://api.example.com/payments.json",
+          "network": "base",
+          "asset": "USDC",
+          "preview": { "available": true, "how": "add ?preview=1 to see the response shape and price without paying" },
+          "spendControls": "none at the provider; cap spend in the agent's wallet"
+        }
+      }
+    ]
+  },
+  "credentials": [ { "type": "payment" } ],
+  "gaps": []
+}

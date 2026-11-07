@@ -307,6 +307,21 @@ async function runFlow(descriptor, args) {
 
 /* ------------------------------------------------------------- requirements */
 
+function payPerCall(d) {
+  return (d.registration?.mechanisms ?? []).filter((m) => m.type === "pay-per-call");
+}
+
+function describePayment(m) {
+  const p = m.payment ?? {};
+  const lines = [`Pay per call — no account, no credentials: ${(p.protocols ?? []).join(", ") || "protocol unspecified"}`];
+  if (m.baseUrl) lines.push(`  base: ${m.baseUrl}`);
+  if (p.network || p.asset) lines.push(`  settles: ${[p.asset, p.network].filter(Boolean).join(" on ")}`);
+  if (p.discoveryUrl) lines.push(`  prices: ${p.discoveryUrl}`);
+  if (p.preview?.available) lines.push(`  free preview: ${p.preview.how ?? "yes"}`);
+  if (p.spendControls) lines.push(`  spend controls: ${p.spendControls}`);
+  return lines.join("\n");
+}
+
 function printRequirements(d) {
   const lines = [];
   lines.push(`${d.provider?.name} — programmatic onboarding: ${d.maturity}`);
@@ -326,6 +341,7 @@ function printRequirements(d) {
       if (m.bootstrap) lines.push(`      bootstrap: ${m.bootstrap}`);
     }
   }
+  for (const m of payPerCall(d)) lines.push(`\n${describePayment(m)}`);
   const flowArgs = d.flow?.args ?? [];
   if (flowArgs.length) {
     lines.push(`\nArguments:`);
@@ -355,6 +371,12 @@ async function main() {
     if (idx >= 0 && argv[idx + 1] !== undefined) args[spec.name] = argv[idx + 1];
     else if (spec.default !== undefined) args[spec.name] = spec.default;
     else if (spec.required) die(`Missing required argument --${spec.name}${spec.description ? ` (${spec.description})` : ""}`);
+  }
+
+  if (!descriptor.flow?.steps?.length && payPerCall(descriptor).length) {
+    // Nothing to register: the onboarding is the payment terms themselves.
+    console.log(payPerCall(descriptor).map(describePayment).join("\n\n"));
+    return;
   }
 
   if (!descriptor.flow?.steps?.length) {
