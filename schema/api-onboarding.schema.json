@@ -220,8 +220,8 @@
         "properties": {
           "type": {
             "type": "string",
-            "description": "payment: nothing is issued — the caller pays per request (registration mechanism pay-per-call), so there is no secret to store.",
-            "enum": ["oauth2-client", "api-key", "personal-access-token", "access-token", "service-account", "webhook-secret", "payment"]
+            "description": "private-key: a signing key the caller holds (e.g. a GitHub App PEM) and uses to mint its own tokens. payment: nothing is issued — the caller pays per request (registration mechanism pay-per-call), so there is no secret to store.",
+            "enum": ["oauth2-client", "api-key", "personal-access-token", "access-token", "service-account", "webhook-secret", "private-key", "payment"]
           },
           "fields": {
             "type": "object",

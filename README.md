@@ -19,6 +19,18 @@ The API Onboarding Descriptor is a machine-readable document, discoverable at `/
 - **economics** — pointers to pricing, quotas, and SLAs (the [SLA4OAI](https://github.com/isa-group/SLA4OAI-Specification) graft point).
 - **gaps** — an honest list of what still needs a human, so every descriptor doubles as the provider's punch list.
 
+## Three ways an agent gets access
+
+Most providers make an agent sign up and get a key. Some let it try first in a sandbox. A few skip the account entirely and charge per request. A descriptor says which of these a provider offers, so an agent knows what it has to do before its first call.
+
+| Path | What the agent does | What it holds afterwards | Fits when | Descriptor |
+|---|---|---|---|---|
+| Account + credentials | Signs up, clears any gates, registers an application | A key, token or client secret it must store | Steady volume, negotiated tiers, per-user data | `account`, `verification`, `registration`, `credentials` |
+| Sandbox / try first | Calls demo endpoints or a test environment, sometimes with no account | A test credential, or nothing | Building and testing an integration before committing | `freeTier` today; a `sandbox` block is proposed for 0.2 ([#2](https://github.com/api-commons/api-onboarding/issues/2)) |
+| Pay per call | Pays the quoted price when the provider answers 402 | Nothing; each payment is the credential | Occasional or exploratory use, where signing up costs more than the calls | `registration.mechanisms[].type: pay-per-call` with `payment`; `credentials[].type: payment` |
+
+A provider can offer more than one. List each as its own mechanism.
+
 ## The proof test
 
 A descriptor is *sufficient* when the generic engine can onboard from metadata alone:
